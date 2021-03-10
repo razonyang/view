@@ -288,6 +288,4 @@ PHP
     {
         return new View('', new Theme(), new SimpleEventDispatcher(), new NullLogger());
     }
-
-
 }
