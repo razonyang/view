@@ -34,7 +34,8 @@
         "vimeo/psalm": "^4.3",
         "yiisoft/aliases": "^1.1",
         "yiisoft/di": "^3.0@dev",
-        "yiisoft/event-dispatcher": "^1.0"
+        "yiisoft/event-dispatcher": "^1.0",
+        "yiisoft/test-support": "^1.2"
     },
     "extra": {
         "branch-alias": {

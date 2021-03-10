@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Yiisoft\View\Tests;
 
+use InvalidArgumentException;
+use Psr\Log\NullLogger;
 use Yiisoft\Files\FileHelper;
+use Yiisoft\Test\Support\EventDispatcher\SimpleEventDispatcher;
 use Yiisoft\View\Theme;
+use Yiisoft\View\View;
 
 /**
  * ViewTest.
@@ -164,4 +168,126 @@ PHP
         $this->webView->setPlaceholderSalt('apple');
         $this->assertSame(dechex(crc32('apple')), $this->webView->getPlaceholderSignature());
     }
+
+    public function testGetBasePath(): void
+    {
+        $basePath = '@resources/views';
+        $view = new View($basePath, new Theme(), new SimpleEventDispatcher(), new NullLogger());
+
+        self::assertSame($basePath, $view->getBasePath());
+    }
+
+    public function testDefaultExtension(): void
+    {
+        $view = $this->createSimpleView();
+
+        // Default is "php"
+        self::assertSame('php', $view->getDefaultExtension());
+
+        $extension = 'html';
+        $view->setDefaultExtension($extension);
+
+        self::assertSame($extension, $view->getDefaultExtension());
+    }
+
+    public function testDefaultParameters(): void
+    {
+        $view = $this->createSimpleView();
+
+        // Default is empty
+        self::assertSame([], $view->getDefaultParameters());
+
+        $parameters = ['name' => 'Zayac'];
+        $view->setDefaultParameters($parameters);
+
+        self::assertSame($parameters, $view->getDefaultParameters());
+    }
+
+    public function testSetBlock(): void
+    {
+        $view = $this->createSimpleView();
+
+        $id = 'abc';
+        $value = 'hello';
+        $view->setBlock($id, $value);
+
+        self::assertSame($value, $view->getBlock($id));
+    }
+
+    public function testGetBlockWithoutBlocks(): void
+    {
+        $view = $this->createViewWithBlocks([]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block: "test" not found.');
+        $view->getBlock('test');
+    }
+
+    public function testGetNotExistsBlock(): void
+    {
+        $view = $this->createViewWithBlocks(['abc' => 'hello']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block: "test" not found.');
+        $view->getBlock('test');
+    }
+
+    public function testGetExistsBlock(): void
+    {
+        $id = 'abc';
+        $value = 'hello';
+        $view = $this->createViewWithBlocks([
+            'A' => 'Letter A',
+            $id => $value,
+            'Z' => 'Letter Z',
+        ]);
+
+        self::assertSame($value, $view->getBlock($id));
+    }
+
+    public function testRemoveBlock(): void
+    {
+        $id = 'abc';
+        $view = $this->createViewWithBlocks([
+            'A' => 'Letter A',
+            $id => 'hello',
+            'Z' => 'Letter Z',
+        ]);
+        $view->removeBlock($id);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Block: "' . $id . '" not found.');
+        $view->getBlock($id);
+    }
+
+    public function testHasBlock(): void
+    {
+        $id = 'abc';
+        $view = $this->createViewWithBlocks([
+            'A' => 'Letter A',
+            $id => 'hello',
+            'Z' => 'Letter Z',
+        ]);
+
+        self::assertTrue($view->hasBlock($id));
+        self::assertFalse($view->hasBlock('non-exists'));
+    }
+
+    private function createViewWithBlocks(array $blocks): View
+    {
+        $view = $this->createSimpleView();
+
+        foreach ($blocks as $id => $value) {
+            $view->setBlock($id, $value);
+        }
+
+        return $view;
+    }
+
+    private function createSimpleView(): View
+    {
+        return new View('', new Theme(), new SimpleEventDispatcher(), new NullLogger());
+    }
+
+
 }
